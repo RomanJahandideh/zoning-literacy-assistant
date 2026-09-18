@@ -1,8 +1,16 @@
 # Zoning Literacy Assistant
 
-A tool that answers plain-language zoning questions and checks specific sites for compliance, grounded entirely in a real bylaw excerpt: every answer traces back through retrieval, synthesis, and an independent verification pass, cites the exact clause it used, and says "not covered" instead of guessing when the excerpt doesn't address something.
+A tool that answers plain-language zoning questions and checks specific sites for compliance, grounded entirely in a real bylaw excerpt: every answer traces back through retrieval, synthesis, and an independent verification pass, cites the exact clause it used, and says "not covered" instead of guessing when the excerpt doesn't address something. It's agentic in a specific, checkable sense: each stage is a separate model call with a narrow job, not one call trusted to do everything at once, and every answer keeps a traceable record of which clauses it retrieved and what its own reviewer flagged, so uncertainty is shown, not hidden.
 
-**Try it live:** open `index.html` in a browser, or serve the folder with any static file server.
+**Try it live:** [romanjahandideh.github.io/zoning-literacy-assistant](https://romanjahandideh.github.io/zoning-literacy-assistant/), or open `index.html` locally (see "Run it locally" below).
+
+## How to test it
+
+You'll need your own Anthropic API key (pasted into the page, sent directly to Anthropic, never to this site or stored anywhere, see "Tech" below).
+
+1. **A grounded answer.** Click the example question *"Can I build a duplex on a 33 foot wide lot?"* You should see a green "grounded in the excerpt" badge, a plain-language answer, the exact clause quotes it used, and a trace line showing which clause numbers were retrieved and that verification found no gaps.
+2. **An honest refusal.** Click *"How many storeys can a laneway house have?"* The bylaw excerpt mentions laneway houses but deliberately doesn't detail their height, so this should come back with an orange "not covered" badge instead of a guessed number, that's the behavior the whole project is built to demonstrate.
+3. **Structured compliance.** Switch to the "Check my site" tab, enter a lot width and depth (the defaults are a real Vancouver lot size), and click "Check compliance." You should get a plain-language summary plus a data table (unit-count tier, setbacks, buildable footprint, FSR, estimated floors and GFA), each line citing a clause number. Toggle the rental-bonus checkbox and re-run, the FSR and resulting floor count should change, that's the bylaw's actual conditional rule (0.70 base, rising to 1.00), not a fixed number.
 
 ## Why this, specifically
 
