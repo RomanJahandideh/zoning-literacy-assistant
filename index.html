@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoning Literacy Assistant</title>
+<meta name="description" content="Ask plain-language questions about a real zoning bylaw excerpt and get answers grounded only in that text, with exact quotes, or a clear 'not covered' instead of a guess.">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0b0d10; color: #e7e7e5;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  #app { display: flex; height: 100%; width: 100%; }
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #panel {
+    width: 360px; flex-shrink: 0;
+    padding: 22px 20px 20px;
+    background: #14171b;
+    border-left: 1px solid #262b31;
+    overflow-y: auto;
+  }
+  h1 { font-size: 16px; margin: 0 0 4px; font-weight: 700; letter-spacing: .2px; }
+  .subtitle { font-size: 12px; color: #8b9199; margin: 0 0 16px; line-height: 1.5; }
+  .header-bar { padding: 20px 24px 14px; border-bottom: 1px solid #1c2025; }
+  #chat { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  #chat-empty { color: #5c636b; font-size: 13px; text-align: center; margin-top: 60px; line-height: 1.7; }
+  .turn { max-width: 720px; margin: 0 auto 22px; }
+  .q-bubble {
+    background: #1c2127; border-radius: 10px 10px 10px 2px; padding: 10px 14px;
+    font-size: 13.5px; color: #e7e7e5; display: inline-block; max-width: 85%;
+  }
+  .a-wrap { margin-top: 10px; }
+  .a-badge {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .3px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .a-badge.grounded { background: rgba(127,191,106,0.15); color: #8fd17c; border: 1px solid rgba(127,191,106,0.35); }
+  .a-badge.not-covered { background: rgba(224,162,90,0.15); color: #e0b57a; border: 1px solid rgba(224,162,90,0.35); }
+  .a-text { font-size: 14px; line-height: 1.6; color: #e7e7e5; }
+  .a-quotes { margin-top: 10px; font-size: 12px; color: #8b9199; line-height: 1.6; }
+  .a-quotes .quote-row { padding: 6px 10px; background: #14171b; border-left: 2px solid #e07b5a; border-radius: 3px; margin-bottom: 5px; font-style: italic; }
+  .a-busy { color: #6b7178; font-size: 13px; font-style: italic; }
+  #input-row {
+    display: flex; gap: 8px; padding: 16px 24px 20px; border-top: 1px solid #1c2025;
+  }
+  #q-input {
+    flex: 1; background: #14171b; color: #e7e7e5; border: 1px solid #2a3138; border-radius: 8px;
+    padding: 12px 14px; font-size: 13.5px; font-family: inherit;
+  }
+  #ask-btn {
+    background: #e07b5a; color: #14171b; border: none; border-radius: 8px;
+    padding: 12px 20px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  }
+  #ask-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .group { margin-bottom: 16px; }
+  .group label { display: block; font-size: 12px; color: #c3c8cd; margin-bottom: 6px; font-weight: 600; }
+  #key-input {
+    width: 100%; background: #0f1215; color: #e7e7e5; border: 1px solid #2a3138;
+    border-radius: 5px; padding: 7px 8px; font-size: 12px;
+  }
+  .hint { font-size: 11px; color: #8b9199; line-height: 1.5; margin-bottom: 8px; }
+  #bylaw-box {
+    background: #0f1215; border: 1px solid #2a3138; border-radius: 6px; padding: 10px;
+    font-size: 11px; line-height: 1.6; color: #9aa0a6; max-height: 340px; overflow-y: auto;
+    white-space: pre-wrap;
+  }
+  .example-q {
+    display: block; width: 100%; text-align: left; background: #191d22; color: #c3c8cd;
+    border: 1px solid #262b31; border-radius: 5px; padding: 7px 9px; font-size: 11.5px;
+    margin-bottom: 6px; cursor: pointer;
+  }
+  .example-q:hover { border-color: #e07b5a; }
+  .foot { margin-top: 18px; font-size: 11px; color: #5c636b; line-height: 1.6; }
+  .foot a { color: #e07b5a; text-decoration: none; }
+  @media (max-width: 760px) {
+    #app { flex-direction: column; }
+    #panel { width: 100%; border-left: none; border-top: 1px solid #262b31; max-height: 50vh; order: 2; }
+    #main { order: 1; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="main">
+    <div class="header-bar">
+      <h1>Zoning Literacy Assistant</h1>
+      <p class="subtitle" style="margin-bottom:0;">Ask a plain-language question. Every answer is grounded only in the bylaw excerpt on the right, quoted, or marked as not covered, never guessed.</p>
+    </div>
+    <div id="chat">
+      <div id="chat-empty">Ask something like "can I build a duplex on my lot?" or pick an example question from the right.</div>
+    </div>
+    <div id="input-row">
+      <input type="text" id="q-input" placeholder="e.g. What's the tallest I can build?">
+      <button id="ask-btn">Ask</button>
+    </div>
+  </div>
+  <div id="panel">
+    <div class="group">
+      <label>Your Anthropic API key</label>
+      <input type="password" id="key-input" placeholder="sk-ant-...">
+      <div class="hint">Sent directly from your browser to Anthropic. Never stored or seen by this site, there is no backend, this is a static page.</div>
+    </div>
+
+    <div class="group">
+      <label>Try an example question</label>
+      <button class="example-q" data-q="Can I build a duplex on a 33 foot wide lot?">Can I build a duplex on a 33 foot wide lot?</button>
+      <button class="example-q" data-q="What's the tallest building I'm allowed to build?">What's the tallest building I'm allowed to build?</button>
+      <button class="example-q" data-q="Do I need to provide parking?">Do I need to provide parking?</button>
+      <button class="example-q" data-q="How many storeys can a laneway house have?">How many storeys can a laneway house have?</button>
+    </div>
+
+    <div class="group">
+      <label>Knowledge base: City of Vancouver R1-1 (Residential Inclusive) district, base provisions</label>
+      <div id="bylaw-box"></div>
+    </div>
+
+    <div class="foot">
+      Answers are generated by an LLM constrained to this excerpt; this is a demo, not legal or planning advice, and the excerpt is simplified and may be out of date. Always confirm against the current official bylaw.
+      <br><a href="https://github.com/RomanJahandideh/zoning-literacy-assistant" target="_blank" rel="noopener">View source on GitHub &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
