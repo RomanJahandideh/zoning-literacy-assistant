@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zoning Literacy Assistant</title>
-<meta name="description" content="Ask plain-language questions about a real zoning bylaw excerpt and get answers grounded only in that text, with exact quotes, or a clear 'not covered' instead of a guess.">
+<meta name="description" content="Ask plain-language zoning questions with retrieve/answer/verify grounding and exact citations, or check a specific site with deterministic compliance math narrated by AI, never calculated by it.">
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
@@ -43,6 +43,30 @@
   .a-quotes { margin-top: 10px; font-size: 12px; color: #8b9199; line-height: 1.6; }
   .a-quotes .quote-row { padding: 6px 10px; background: #14171b; border-left: 2px solid #e07b5a; border-radius: 3px; margin-bottom: 5px; font-style: italic; }
   .a-busy { color: #6b7178; font-size: 13px; font-style: italic; }
+  .a-trace { margin-top: 9px; font-size: 10.5px; color: #5c636b; line-height: 1.5; }
+  #view-toggle { display: flex; gap: 6px; }
+  #view-toggle button {
+    background: #191d22; color: #8b9199; border: 1px solid #262b31; border-radius: 6px;
+    padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  #view-toggle button.active { background: #e07b5a; color: #14171b; border-color: #e07b5a; }
+  #chat-view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #feas-view { flex: 1; overflow-y: auto; padding: 24px; }
+  #feas-form { max-width: 520px; margin: 0 auto; }
+  .feas-row { display: flex; gap: 14px; }
+  #feas-width, #feas-depth {
+    width: 100%; background: #14171b; color: #e7e7e5; border: 1px solid #2a3138; border-radius: 6px;
+    padding: 9px 10px; font-size: 13px;
+  }
+  #feas-btn {
+    background: #e07b5a; color: #14171b; border: none; border-radius: 8px;
+    padding: 11px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  #feas-btn:disabled { opacity: 0.5; cursor: default; }
+  .feas-data {
+    margin-top: 4px; font-size: 12px; color: #9aa0a6; line-height: 1.9;
+    background: #14171b; border: 1px solid #262b31; border-radius: 6px; padding: 12px 14px;
+  }
   #input-row {
     display: flex; gap: 8px; padding: 16px 24px 20px; border-top: 1px solid #1c2025;
   }
@@ -88,14 +112,41 @@
   <div id="main">
     <div class="header-bar">
       <h1>Zoning Literacy Assistant</h1>
-      <p class="subtitle" style="margin-bottom:0;">Ask a plain-language question. Every answer is grounded only in the bylaw excerpt on the right, quoted, or marked as not covered, never guessed.</p>
+      <p class="subtitle" style="margin-bottom:10px;">Ask a plain-language question, or check a specific site. Every answer traces back to the exact bylaw clause it came from, retrieved, answered, and independently verified, or marked as not covered, never guessed.</p>
+      <div id="view-toggle">
+        <button id="tab-chat" class="active" type="button">Ask a question</button>
+        <button id="tab-feas" type="button">Check my site</button>
+      </div>
     </div>
-    <div id="chat">
-      <div id="chat-empty">Ask something like "can I build a duplex on my lot?" or pick an example question from the right.</div>
+    <div id="chat-view">
+      <div id="chat">
+        <div id="chat-empty">Ask something like "can I build a duplex on my lot?" or pick an example question from the right.</div>
+      </div>
+      <div id="input-row">
+        <input type="text" id="q-input" placeholder="e.g. What's the tallest I can build?">
+        <button id="ask-btn">Ask</button>
+      </div>
     </div>
-    <div id="input-row">
-      <input type="text" id="q-input" placeholder="e.g. What's the tallest I can build?">
-      <button id="ask-btn">Ask</button>
+    <div id="feas-view" style="display:none;">
+      <div id="feas-form">
+        <p class="subtitle" style="margin:0 0 14px;">Enter a specific lot. The compliance numbers are computed directly in code from the bylaw's real thresholds, setbacks, height, and FSR, not calculated by the AI, then Claude explains the result in plain language with clause citations.</p>
+        <div class="feas-row">
+          <div class="group" style="flex:1;">
+            <label>Lot width (m)</label>
+            <input type="number" id="feas-width" value="10" step="0.1" min="1">
+          </div>
+          <div class="group" style="flex:1;">
+            <label>Lot depth (m)</label>
+            <input type="number" id="feas-depth" value="37" step="0.1" min="1">
+          </div>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#c3c8cd;margin-bottom:14px;cursor:pointer;">
+          <input type="checkbox" id="feas-rental" style="margin-top:2px;">
+          <span>Planning to include a secured rental or below-market unit (FSR bonus)</span>
+        </label>
+        <button id="feas-btn">Check compliance</button>
+        <div id="feas-result" style="display:none;margin-top:18px;"></div>
+      </div>
     </div>
   </div>
   <div id="panel">
